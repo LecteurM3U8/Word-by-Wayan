@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word by Wayan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #editor {
+            min-height: calc(100vh - 120px);
+            padding: 20px;
+            outline: none;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 400px;
+            border-radius: 5px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .loupe {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 3px solid #ccc;
+            background-repeat: no-repeat;
+            display: none;
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="flex justify-between items-center p-2">
+            <div class="flex items-center">
+                <div class="text-blue-600 font-bold text-2xl ml-4">Word by Wayan</div>
+                <div class="ml-6 flex space-x-2">
+                    <button class="px-3 py-1 hover:bg-gray-200 rounded" onclick="openTab('file')">Fichier</button>
+                    <button class="px-3 py-1 hover:bg-gray-200 rounded bg-blue-100" onclick="openTab('home')">Accueil</button>
+                    <button class="px-3 py-1 hover:bg-gray-200 rounded" onclick="openTab('insert')">Insertion</button>
+                    <button class="px-3 py-1 hover:bg-gray-200 rounded" onclick="openTab('layout')">Mise en page</button>
+                    <button class="px-3 py-1 hover:bg-gray-200 rounded" onclick="openTab('references')">Références</button>
+                    <button class="px-3 py-1 hover:bg-gray-200 rounded" onclick="openTab('review')">Révision</button>
+                    <button class="px-3 py-1 hover:bg-gray-200 rounded" onclick="openTab('view')">Affichage</button>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 mr-4">
+                <button class="p-1 hover:bg-gray-200 rounded-full" onclick="toggleLoupe()">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button class="p-1 hover:bg-gray-200 rounded-full" onclick="openModal('profileModal')">
+                    <i class="fas fa-user"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toolbar - Home Tab -->
+    <div id="homeTab" class="tab-content active bg-white shadow-sm">
+        <div class="flex items-center p-2 space-x-1 overflow-x-auto">
+            <!-- Clipboard -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('undo')">
+                    <i class="fas fa-undo"></i>
+                    <span class="tooltiptext">Annuler</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('redo')">
+                    <i class="fas fa-redo"></i>
+                    <span class="tooltiptext">Rétablir</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('cut')">
+                    <i class="fas fa-cut"></i>
+                    <span class="tooltiptext">Couper</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('copy')">
+                    <i class="fas fa-copy"></i>
+                    <span class="tooltiptext">Copier</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('paste')">
+                    <i class="fas fa-paste"></i>
+                    <span class="tooltiptext">Coller</span>
+                </button>
+            </div>
+
+            <!-- Font -->
+            <div class="flex space-x-1 border-r pr-2">
+                <select class="p-1 border rounded hover:bg-gray-100" id="fontFamily" onchange="changeFontFamily()">
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Verdana">Verdana</option>
+                </select>
+                <select class="p-1 border rounded hover:bg-gray-100" id="fontSize" onchange="changeFontSize()">
+                    <option value="1">8</option>
+                    <option value="2">10</option>
+                    <option value="3">12</option>
+                    <option value="4">14</option>
+                    <option value="5">18</option>
+                    <option value="6">24</option>
+                    <option value="7">36</option>
+                </select>
+            </div>
+
+            <!-- Formatting -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('bold')">
+                    <i class="fas fa-bold"></i>
+                    <span class="tooltiptext">Gras</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('italic')">
+                    <i class="fas fa-italic"></i>
+                    <span class="tooltiptext">Italique</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('underline')">
+                    <i class="fas fa-underline"></i>
+                    <span class="tooltiptext">Souligné</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('strikeThrough')">
+                    <i class="fas fa-strikethrough"></i>
+                    <span class="tooltiptext">Barré</span>
+                </button>
+                <div class="dropdown relative">
+                    <button class="p-2 hover:bg-gray-200 rounded tooltip">
+                        <i class="fas fa-text-height"></i>
+                        <span class="tooltiptext">Couleur de surbrillance</span>
+                    </button>
+                    <div class="dropdown-content p-2 grid grid-cols-5 gap-1">
+                        <div class="w-6 h-6 bg-yellow-200 hover:border-2 border-gray-400" onclick="highlightText('yellow')"></div>
+                        <div class="w-6 h-6 bg-green-200 hover:border-2 border-gray-400" onclick="highlightText('green')"></div>
+                        <div class="w-6 h-6 bg-blue-200 hover:border-2 border-gray-400" onclick="highlightText('blue')"></div>
+                        <div class="w-6 h-6 bg-red-200 hover:border-2 border-gray-400" onclick="highlightText('red')"></div>
+                        <div class="w-6 h-6 bg-pink-200 hover:border-2 border-gray-400" onclick="highlightText('pink')"></div>
+                        <div class="w-6 h-6 bg-purple-200 hover:border-2 border-gray-400" onclick="highlightText('purple')"></div>
+                        <div class="w-6 h-6 bg-orange-200 hover:border-2 border-gray-400" onclick="highlightText('orange')"></div>
+                        <div class="w-6 h-6 bg-gray-200 hover:border-2 border-gray-400" onclick="highlightText('gray')"></div>
+                    </div>
+                </div>
+                <div class="dropdown relative">
+                    <button class="p-2 hover:bg-gray-200 rounded tooltip">
+                        <i class="fas fa-font"></i>
+                        <span class="tooltiptext">Couleur de police</span>
+                    </button>
+                    <div class="dropdown-content p-2 grid grid-cols-5 gap-1">
+                        <div class="w-6 h-6 bg-black hover:border-2 border-gray-400" onclick="changeTextColor('black')"></div>
+                        <div class="w-6 h-6 bg-red-500 hover:border-2 border-gray-400" onclick="changeTextColor('red')"></div>
+                        <div class="w-6 h-6 bg-blue-500 hover:border-2 border-gray-400" onclick="changeTextColor('blue')"></div>
+                        <div class="w-6 h-6 bg-green-500 hover:border-2 border-gray-400" onclick="changeTextColor('green')"></div>
+                        <div class="w-6 h-6 bg-purple-500 hover:border-2 border-gray-400" onclick="changeTextColor('purple')"></div>
+                        <div class="w-6 h-6 bg-orange-500 hover:border-2 border-gray-400" onclick="changeTextColor('orange')"></div>
+                        <div class="w-6 h-6 bg-pink-500 hover:border-2 border-gray-400" onclick="changeTextColor('pink')"></div>
+                        <div class="w-6 h-6 bg-brown-500 hover:border-2 border-gray-400" onclick="changeTextColor('brown')"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paragraph -->
+            <div class="flex space-x-1 border-r pr-2">
+                <div class="dropdown relative">
+                    <button class="p-2 hover:bg-gray-200 rounded tooltip">
+                        <i class="fas fa-align-left"></i>
+                        <span class="tooltiptext">Alignement</span>
+                    </button>
+                    <div class="dropdown-content p-2">
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="execCommand('justifyLeft')">
+                            <i class="fas fa-align-left mr-2"></i> Aligner à gauche
+                        </button>
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="execCommand('justifyCenter')">
+                            <i class="fas fa-align-center mr-2"></i> Centrer
+                        </button>
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="execCommand('justifyRight')">
+                            <i class="fas fa-align-right mr-2"></i> Aligner à droite
+                        </button>
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="execCommand('justifyFull')">
+                            <i class="fas fa-align-justify mr-2"></i> Justifier
+                        </button>
+                    </div>
+                </div>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('insertOrderedList')">
+                    <i class="fas fa-list-ol"></i>
+                    <span class="tooltiptext">Liste numérotée</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('insertUnorderedList')">
+                    <i class="fas fa-list-ul"></i>
+                    <span class="tooltiptext">Liste à puces</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="decreaseIndent()">
+                    <i class="fas fa-outdent"></i>
+                    <span class="tooltiptext">Diminuer le retrait</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="increaseIndent()">
+                    <i class="fas fa-indent"></i>
+                    <span class="tooltiptext">Augmenter le retrait</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="execCommand('formatBlock', false, 'blockquote')">
+                    <i class="fas fa-quote-right"></i>
+                    <span class="tooltiptext">Citation</span>
+                </button>
+            </div>
+
+            <!-- Editing -->
+            <div class="flex space-x-1">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="findText()">
+                    <i class="fas fa-search"></i>
+                    <span class="tooltiptext">Rechercher</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="replaceText()">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span class="tooltiptext">Remplacer</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="toggleSpellCheck()">
+                    <i class="fas fa-check-circle"></i>
+                    <span class="tooltiptext">Vérification orthographique</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar - Insert Tab -->
+    <div id="insertTab" class="tab-content bg-white shadow-sm">
+        <div class="flex items-center p-2 space-x-1 overflow-x-auto">
+            <!-- Tables -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertTable()">
+                    <i class="fas fa-table"></i>
+                    <span class="tooltiptext">Tableau</span>
+                </button>
+                <div class="dropdown relative">
+                    <button class="p-2 hover:bg-gray-200 rounded tooltip">
+                        <i class="fas fa-table"></i>
+                        <span class="tooltiptext">Styles de tableau</span>
+                    </button>
+                    <div class="dropdown-content p-2">
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="applyTableStyle('basic')">
+                            Style basique
+                        </button>
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="applyTableStyle('grid')">
+                            Style grille
+                        </button>
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="applyTableStyle('striped')">
+                            Style rayé
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Illustrations -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertImage()">
+                    <i class="fas fa-image"></i>
+                    <span class="tooltiptext">Image</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertShape()">
+                    <i class="fas fa-shapes"></i>
+                    <span class="tooltiptext">Formes</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertChart()">
+                    <i class="fas fa-chart-bar"></i>
+                    <span class="tooltiptext">Graphique</span>
+                </button>
+            </div>
+
+            <!-- Links -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertLink()">
+                    <i class="fas fa-link"></i>
+                    <span class="tooltiptext">Lien</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertBookmark()">
+                    <i class="fas fa-bookmark"></i>
+                    <span class="tooltiptext">Marque-page</span>
+                </button>
+            </div>
+
+            <!-- Header & Footer -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertHeader()">
+                    <i class="fas fa-heading"></i>
+                    <span class="tooltiptext">En-tête</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertFooter()">
+                    <i class="fas fa-window-minimize"></i>
+                    <span class="tooltiptext">Pied de page</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertPageNumber()">
+                    <i class="fas fa-list-ol"></i>
+                    <span class="tooltiptext">Numéro de page</span>
+                </button>
+            </div>
+
+            <!-- Text -->
+            <div class="flex space-x-1">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertTextbox()">
+                    <i class="fas fa-square"></i>
+                    <span class="tooltiptext">Zone de texte</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertWordArt()">
+                    <i class="fas fa-font"></i>
+                    <span class="tooltiptext">WordArt</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertSignature()">
+                    <i class="fas fa-signature"></i>
+                    <span class="tooltiptext">Signature</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar - Layout Tab -->
+    <div id="layoutTab" class="tab-content bg-white shadow-sm">
+        <div class="flex items-center p-2 space-x-1 overflow-x-auto">
+            <!-- Page Setup -->
+            <div class="flex space-x-1 border-r pr-2">
+                <div class="dropdown relative">
+                    <button class="p-2 hover:bg-gray-200 rounded tooltip">
+                        <i class="fas fa-file-alt"></i>
+                        <span class="tooltiptext">Mise en page</span>
+                    </button>
+                    <div class="dropdown-content p-2">
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="changePageOrientation('portrait')">
+                            Portrait
+                        </button>
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="changePageOrientation('landscape')">
+                            Paysage
+                        </button>
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="changeMargins('normal')">
+                            Marges normales
+                        </button>
+                        <button class="block w-full text-left p-1 hover:bg-gray-200" onclick="changeMargins('narrow')">
+                            Marges étroites
+                        </button>
+                    </div>
+                </div>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="changeColumns(1)">
+                    <i class="fas fa-columns"></i>
+                    <span class="tooltiptext">Colonnes</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertPageBreak()">
+                    <i class="fas fa-level-down-alt"></i>
+                    <span class="tooltiptext">Saut de page</span>
+                </button>
+            </div>
+
+            <!-- Paragraph -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="increaseIndent()">
+                    <i class="fas fa-indent"></i>
+                    <span class="tooltiptext">Augmenter le retrait</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="decreaseIndent()">
+                    <i class="fas fa-outdent"></i>
+                    <span class="tooltiptext">Diminuer le retrait</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="changeLineSpacing(1)">
+                    <i class="fas fa-text-height"></i>
+                    <span class="tooltiptext">Interligne</span>
+                </button>
+            </div>
+
+            <!-- Arrange -->
+            <div class="flex space-x-1">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="bringForward()">
+                    <i class="fas fa-arrow-up"></i>
+                    <span class="tooltiptext">Avancer</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="sendBackward()">
+                    <i class="fas fa-arrow-down"></i>
+                    <span class="tooltiptext">Reculer</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="alignObjects('left')">
+                    <i class="fas fa-align-left"></i>
+                    <span class="tooltiptext">Aligner à gauche</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="alignObjects('center')">
+                    <i class="fas fa-align-center"></i>
+                    <span class="tooltiptext">Aligner au centre</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar - References Tab -->
+    <div id="referencesTab" class="tab-content bg-white shadow-sm">
+        <div class="flex items-center p-2 space-x-1 overflow-x-auto">
+            <!-- Table of Contents -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertTableOfContents()">
+                    <i class="fas fa-list"></i>
+                    <span class="tooltiptext">Table des matières</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="updateTableOfContents()">
+                    <i class="fas fa-sync-alt"></i>
+                    <span class="tooltiptext">Mettre à jour</span>
+                </button>
+            </div>
+
+            <!-- Footnotes -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertFootnote()">
+                    <i class="fas fa-asterisk"></i>
+                    <span class="tooltiptext">Note de bas de page</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertEndnote()">
+                    <i class="fas fa-asterisk"></i>
+                    <span class="tooltiptext">Note de fin</span>
+                </button>
+            </div>
+
+            <!-- Citations & Bibliography -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertCitation()">
+                    <i class="fas fa-quote-right"></i>
+                    <span class="tooltiptext">Citation</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertBibliography()">
+                    <i class="fas fa-book"></i>
+                    <span class="tooltiptext">Bibliographie</span>
+                </button>
+            </div>
+
+            <!-- Captions -->
+            <div class="flex space-x-1">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertCaption()">
+                    <i class="fas fa-heading"></i>
+                    <span class="tooltiptext">Légende</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertCrossReference()">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span class="tooltiptext">Référence croisée</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar - Review Tab -->
+    <div id="reviewTab" class="tab-content bg-white shadow-sm">
+        <div class="flex items-center p-2 space-x-1 overflow-x-auto">
+            <!-- Proofing -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="toggleSpellCheck()">
+                    <i class="fas fa-check-circle"></i>
+                    <span class="tooltiptext">Vérification orthographique</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="checkGrammar()">
+                    <i class="fas fa-spell-check"></i>
+                    <span class="tooltiptext">Grammaire</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="thesaurus()">
+                    <i class="fas fa-book"></i>
+                    <span class="tooltiptext">Thésaurus</span>
+                </button>
+            </div>
+
+            <!-- Language -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="translateText()">
+                    <i class="fas fa-language"></i>
+                    <span class="tooltiptext">Traduire</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="setLanguage('fr')">
+                    <i class="fas fa-globe"></i>
+                    <span class="tooltiptext">Langue</span>
+                </button>
+            </div>
+
+            <!-- Comments -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="insertComment()">
+                    <i class="fas fa-comment"></i>
+                    <span class="tooltiptext">Nouveau commentaire</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="deleteComment()">
+                    <i class="fas fa-trash"></i>
+                    <span class="tooltiptext">Supprimer</span>
+                </button>
+            </div>
+
+            <!-- Tracking -->
+            <div class="flex space-x-1">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="trackChanges()">
+                    <i class="fas fa-pencil-alt"></i>
+                    <span class="tooltiptext">Suivi des modifications</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="acceptChanges()">
+                    <i class="fas fa-check"></i>
+                    <span class="tooltiptext">Accepter</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="rejectChanges()">
+                    <i class="fas fa-times"></i>
+                    <span class="tooltiptext">Refuser</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar - View Tab -->
+    <div id="viewTab" class="tab-content bg-white shadow-sm">
+        <div class="flex items-center p-2 space-x-1 overflow-x-auto">
+            <!-- Views -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="changeView('print')">
+                    <i class="fas fa-print"></i>
+                    <span class="tooltiptext">Mise en page</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="changeView('web')">
+                    <i class="fas fa-desktop"></i>
+                    <span class="tooltiptext">Web</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="changeView('read')">
+                    <i class="fas fa-book-open"></i>
+                    <span class="tooltiptext">Lecture</span>
+                </button>
+            </div>
+
+            <!-- Zoom -->
+            <div class="flex space-x-1 border-r pr-2">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="zoomIn()">
+                    <i class="fas fa-search-plus"></i>
+                    <span class="tooltiptext">Zoom avant</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="zoomOut()">
+                    <i class="fas fa-search-minus"></i>
+                    <span class="tooltiptext">Zoom arrière</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="zoomOnePage()">
+                    <i class="fas fa-file-alt"></i>
+                    <span class="tooltiptext">Une page</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="zoomTwoPages()">
+                    <i class="fas fa-copy"></i>
+                    <span class="tooltiptext">Deux pages</span>
+                </button>
+            </div>
+
+            <!-- Window -->
+            <div class="flex space-x-1">
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="newWindow()">
+                    <i class="fas fa-window-restore"></i>
+                    <span class="tooltiptext">Nouvelle fenêtre</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="arrangeAll()">
+                    <i class="fas fa-th"></i>
+                    <span class="tooltiptext">Afficher tout</span>
+                </button>
+                <button class="p-2 hover:bg-gray-200 rounded tooltip" onclick="splitWindow()">
+                    <i class="fas fa-columns"></i>
+                    <span class="tooltiptext">Fractionner</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="bg-gray-200 p-1 flex justify-between items-center text-sm">
+        <div class="flex space-x-4 ml-2">
+            <span>Page 1</span>
+            <span>Mots: <span id="wordCount">0</span></span>
+            <span>Caractères: <span id="charCount">0</span></span>
+            <span id="spellCheckStatus">Vérification: Désactivée</span>
+        </div>
+        <div class="flex space-x-2 mr-2">
+            <button class="p-1 hover:bg-gray-300 rounded" onclick="toggleSpellCheck()">
+                <i class="fas fa-check-circle"></i> Vérification orthographique
+            </button>
+            <select class="p-1 border rounded bg-white" id="zoomLevel" onchange="changeZoom()">
+                <option value="100">100%</option>
+                <option value="150">150%</option>
+                <option value="200">200%</option>
+                <option value="50">50%</option>
+                <option value="75">75%</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Editor -->
+    <div class="bg-white mx-auto my-4 shadow-lg" style="width: 8.5in; min-height: 11in;">
+        <div id="editor" contenteditable="true" class="prose max-w-none" spellcheck="false" onclick="clearDefaultText()"></div>
+    </div>
+
+    <!-- Loupe -->
+    <div id="loupe" class="loupe"></div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('profileModal')">&times;</span>
+            <h2 class="text-xl font-bold mb-4">Connexion</h2>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="email" class="block mb-1">Email:</label>
+                    <input type="email" id="email" required class="w-full p-2 border rounded">
+                </div>
+                <div>
+                    <label for="password" class="block mb-1">Mot de passe:</label>
+                    <input type="password" id="password" required class="w-full p-2 border rounded">
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Se connecter</button>
+            </form>
+            <div class="mt-4 text-center">
+                <p>Pas de compte? <a href="#" onclick="showRegisterForm()" class="text-blue-500">S'inscrire</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Find/Replace Modal -->
+    <div id="findModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('findModal')">&times;</span>
+            <h2 class="text-xl font-bold mb-4">Rechercher</h2>
+            <div class="mb-4">
+                <input type="text" id="findText" placeholder="Rechercher..." class="w-full p-2 border rounded">
+            </div>
+            <button onclick="doFind()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Rechercher</button>
+        </div>
+    </div>
+
+    <!-- Replace Modal -->
+    <div id="replaceModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('replaceModal')">&times;</span>
+            <h2 class="text-xl font-bold mb-4">Remplacer</h2>
+            <div class="mb-4">
+                <input type="text" id="findReplaceText" placeholder="Rechercher..." class="w-full p-2 border rounded mb-2">
+                <input type="text" id="replaceWithText" placeholder="Remplacer par..." class="w-full p-2 border rounded">
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="doReplace()" class="flex-1 bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Remplacer</button>
+                <button onclick="doReplaceAll()" class="flex-1 bg-green-500 text-white p-2 rounded hover:bg-green-600">Tout remplacer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Basic commands
+        function execCommand(command, showUI = false, value = null) {
+            document.execCommand(command, showUI, value);
+            updateCounts();
+        }
+
+        // Font family change
+        function changeFontFamily() {
+            const font = document.getElementById('fontFamily').value;
+            execCommand('fontName', false, font);
+        }
+
+        // Font size change
+        function changeFontSize() {
+            const size = document.getElementById('fontSize').value;
+            execCommand('fontSize', false, size);
+        }
+
+        // Text color change
+        function changeTextColor(color) {
+            execCommand('foreColor', false, color);
+        }
+
+        // Highlight text
+        function highlightText(color) {
+            execCommand('hiliteColor', false, color);
+        }
+
+        // Indent functions
+        function increaseIndent() {
+            execCommand('indent');
+        }
+
+        function decreaseIndent() {
+            execCommand('outdent');
+        }
+
+        // Insert link
+        function insertLink() {
+            const url = prompt('Entrez l\'URL:', 'http://');
+            if (url) {
+                execCommand('createLink', false, url);
+            }
+        }
+
+        // Insert image
+        function insertImage() {
+            const url = prompt('Entrez l\'URL de l\'image:', 'http://');
+            if (url) {
+                execCommand('insertImage', false, url);
+            }
+        }
+
+        // Insert table
+        function insertTable() {
+            const rows = prompt('Nombre de lignes:', '3');
+            const cols = prompt('Nombre de colonnes:', '3');
+            
+            if (rows && cols) {
+                let table = '<table border="1" style="width: 100%; border-collapse: collapse;">';
+                for (let i = 0; i < parseInt(rows); i++) {
+                    table += '<tr>';
+                    for (let j = 0; j < parseInt(cols); j++) {
+                        table += '<td style="padding: 5px;">&nbsp;</td>';
+                    }
+                    table += '</tr>';
+                }
+                table += '</table>';
+                
+                execCommand('insertHTML', false, table);
+            }
+        }
+
+        // Zoom functions
+        function zoomIn() {
+            const editor = document.getElementById('editor');
+            let currentZoom = parseInt(editor.style.zoom) || 100;
+            currentZoom += 10;
+            editor.style.zoom = currentZoom + '%';
+            updateZoomSelect(currentZoom);
+        }
+
+        function zoomOut() {
+            const editor = document.getElementById('editor');
+            let currentZoom = parseInt(editor.style.zoom) || 100;
+            currentZoom = Math.max(50, currentZoom - 10);
+            editor.style.zoom = currentZoom + '%';
+            updateZoomSelect(currentZoom);
+        }
+
+        function changeZoom() {
+            const zoom = document.getElementById('zoomLevel').value;
+            document.getElementById('editor').style.zoom = zoom + '%';
+        }
+
+        function updateZoomSelect(zoom) {
+            const select = document.getElementById('zoomLevel');
+            const option = select.querySelector(`option[value="${zoom}"]`);
+            if (option) {
+                option.selected = true;
+            } else {
+                const newOption = document.createElement('option');
+                newOption.value = zoom;
+                newOption.textContent = zoom + '%';
+                select.appendChild(newOption);
+                newOption.selected = true;
+            }
+        }
+
+        // Fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Spell check
+        function toggleSpellCheck() {
+            const editor = document.getElementById('editor');
+            editor.spellcheck = !editor.spellcheck;
+            document.getElementById('spellCheckStatus').textContent = 
+                `Vérification: ${editor.spellcheck ? 'Activée' : 'Désactivée'}`;
+        }
+
+        // Word and character count
+        function updateCounts() {
+            const editor = document.getElementById('editor');
+            const text = editor.innerText || '';
+            
+            // Character count
+            const charCount = text.length;
+            document.getElementById('charCount').textContent = charCount;
+            
+            // Word count (simplified)
+            const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+            document.getElementById('wordCount').textContent = wordCount;
+        }
+
+        // Tab switching
+        function openTab(tabName) {
+            const tabs = ['homeTab', 'insertTab', 'layoutTab', 'referencesTab', 'reviewTab', 'viewTab'];
+            tabs.forEach(tab => {
+                document.getElementById(tab).classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function showRegisterForm() {
+            const loginForm = document.getElementById('loginForm');
+            loginForm.innerHTML = `
+                <div>
+                    <label for="regEmail" class="block mb-1">Email:</label>
+                    <input type="email" id="regEmail" required class="w-full p-2 border rounded">
+                </div>
+                <div>
+                    <label for="regPassword" class="block mb-1">Mot de passe:</label>
+                    <input type="password" id="regPassword" required class="w-full p-2 border rounded">
+                </div>
+                <div>
+                    <label for="regConfirmPassword" class="block mb-1">Confirmer mot de passe:</label>
+                    <input type="password" id="regConfirmPassword" required class="w-full p-2 border rounded">
+                </div>
+                <button type="button" onclick="registerUser()" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">S'inscrire</button>
+                <div class="mt-2 text-center">
+                    <p>Déjà un compte? <a href="#" onclick="showLoginForm()" class="text-blue-500">Se connecter</a></p>
+                </div>
+            `;
+        }
+
+        function showLoginForm() {
+            const loginForm = document.getElementById('loginForm');
+            loginForm.innerHTML = `
+                <div>
+                    <label for="email" class="block mb-1">Email:</label>
+                    <input type="email" id="email" required class="w-full p-2 border rounded">
+                </div>
+                <div>
+                    <label for="password" class="block mb-1">Mot de passe:</label>
+                    <input type="password" id="password" required class="w-full p-2 border rounded">
+                </div>
+                <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Se connecter</button>
+                <div class="mt-4 text-center">
+                    <p>Pas de compte? <a href="#" onclick="showRegisterForm()" class="text-blue-500">S'inscrire</a></p>
+                </div>
+            `;
+        }
+
+        function registerUser() {
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                alert('Les mots de passe ne correspondent pas!');
+                return;
+            }
+            
+            // In a real app, you would send this to a server
+            localStorage.setItem('userEmail', email);
+            localStorage.setItem('userPassword', password);
+            
+            alert('Inscription réussie! Vous pouvez maintenant vous connecter.');
+            showLoginForm();
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // In a real app, you would verify with a server
+            const storedEmail = localStorage.getItem('userEmail');
+            const storedPassword = localStorage.getItem('userPassword');
+            
+            if (email === storedEmail && password === storedPassword) {
+                alert('Connexion réussie!');
+                closeModal('profileModal');
+            } else {
+                alert('Email ou mot de passe incorrect!');
+            }
+        });
+
+        // Find/Replace functions
+        function findText() {
+            openModal('findModal');
+        }
+
+        function replaceText() {
+            openModal('replaceModal');
+        }
+
+        function doFind() {
+            const text = document.getElementById('findText').value;
+            if (!text) return;
+            
+            const editor = document.getElementById('editor');
+            const content = editor.innerHTML;
+            const regex = new RegExp(text, 'gi');
+            
+            editor.innerHTML = content.replace(regex, match => 
+                `<span style="background-color: yellow;">${match}</span>`
+            );
+        }
+
+        function doReplace() {
+            const findText = document.getElementById('findReplaceText').value;
+            const replaceText = document.getElementById('replaceWithText').value;
+            if (!findText) return;
+            
+            const editor = document.getElementById('editor');
+            const content = editor.innerHTML;
+            const regex = new RegExp(findText, 'g');
+            
+            editor.innerHTML = content.replace(regex, replaceText);
+        }
+
+        function doReplaceAll() {
+            const findText = document.getElementById('findReplaceText').value;
+            const replaceText = document.getElementById('replaceWithText').value;
+            if (!findText) return;
+            
+            const editor = document.getElementById('editor');
+            const content = editor.innerHTML;
+            const regex = new RegExp(findText, 'gi');
+            
+            editor.innerHTML = content.replace(regex, replaceText);
+        }
+
+        // Loupe function
+        function toggleLoupe() {
+            const loupe = document.getElementById('loupe');
+            if (loupe.style.display === 'block') {
+                loupe.style.display = 'none';
+                document.removeEventListener('mousemove', moveLoupe);
+            } else {
+                loupe.style.display = 'block';
+                document.addEventListener('mousemove', moveLoupe);
+            }
+        }
+
+        function moveLoupe(e) {
+            const loupe = document.getElementById('loupe');
+            const editor = document.getElementById('editor');
+            
+            // Position the loupe
+            loupe.style.left = (e.pageX - 100) + 'px';
+            loupe.style.top = (e.pageY - 100) + 'px';
+            
+            // Get the editor position
+            const editorRect = editor.getBoundingClientRect();
+            const x = e.pageX - editorRect.left;
+            const y = e.pageY - editorRect.top;
+            
+            // Set the background to show the zoomed content
+            loupe.style.backgroundImage = `url(${getEditorImage()})`;
+            loupe.style.backgroundSize = `${editor.offsetWidth * 2}px ${editor.offsetHeight * 2}px`;
+            loupe.style.backgroundPosition = `-${x * 2 - 100}px -${y * 2 - 100}px`;
+        }
+
+        function getEditorImage() {
+            // In a real app, you would use html2canvas or similar to capture the editor content
+            return '';
+        }
+
+        // Clear default text on first click
+        function clearDefaultText() {
+            const editor = document.getElementById('editor');
+            if (editor.innerHTML.includes('Bienvenue dans Word by Wayan')) {
+                editor.innerHTML = '<p><br></p>';
+                editor.removeEventListener('click', clearDefaultText);
+            }
+        }
+
+        // Initialize
+        document.getElementById('editor').addEventListener('input', updateCounts);
+        document.getElementById('editor').addEventListener('keyup', updateCounts);
+        document.getElementById('editor').addEventListener('paste', updateCounts);
+        document.getElementById('editor').addEventListener('cut', updateCounts);
+
+        // Set default font
+        document.getElementById('fontFamily').value = 'Arial';
+        document.getElementById('fontSize').value = '3';
+
+        // Add some default text
+        document.getElementById('editor').innerHTML = `
+            <h1 style="text-align: center;">Bienvenue dans Word by Wayan</h1>
+            <p style="text-align: center;">Commencez à taper ici...</p>
+        `;
+        updateCounts();
+    </script>
+</body>
+</html>
